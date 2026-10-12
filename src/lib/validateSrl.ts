@@ -16,6 +16,29 @@ function occurrences(text: string, token: string) {
   return text.split(token).length - 1
 }
 
+function containsNestedPair(text: string, open: string, close: string) {
+  let depth = 0
+  let position = 0
+
+  while (position < text.length) {
+    const nextOpen = text.indexOf(open, position)
+    const nextClose = text.indexOf(close, position)
+
+    if (nextOpen === -1 && nextClose === -1) return false
+
+    if (nextOpen !== -1 && (nextClose === -1 || nextOpen < nextClose)) {
+      depth += 1
+      if (depth > 1) return true
+      position = nextOpen + open.length
+    } else {
+      depth = Math.max(0, depth - 1)
+      position = nextClose + close.length
+    }
+  }
+
+  return false
+}
+
 export function validateSrl(
   text: string,
   fields: FieldDefinition[],
@@ -60,8 +83,7 @@ export function validateSrl(
     })
   }
 
-  const listOpen = text.indexOf('[[')
-  if (listOpen >= 0 && text.indexOf('[[', listOpen + 2) >= 0) {
+  if (containsNestedPair(text, '[[', ']]')) {
     diagnostics.push({
       level: 'error',
       message: 'Nested lists are not supported',
@@ -69,8 +91,7 @@ export function validateSrl(
     })
   }
 
-  const conditionOpen = text.indexOf('{{')
-  if (conditionOpen >= 0 && text.indexOf('{{', conditionOpen + 2) >= 0) {
+  if (containsNestedPair(text, '{{', '}}')) {
     diagnostics.push({
       level: 'error',
       message: 'Nested conditional text is not supported',
